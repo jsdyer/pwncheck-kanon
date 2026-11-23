@@ -56,7 +56,8 @@ def main():
                 page.locator('#check').click()
                 expect(page.locator('#result-title')).to_have_text('Found in the breach dataset')
                 assert page.locator('#password').input_value() == ''
-                assert '42 recorded occurrences' in page.locator('#result-count').inner_text()
+                # text_content ignores the eyebrow's visual uppercase styling.
+                expect(page.locator('#result-count')).to_have_text('42 recorded occurrences')
                 outgoing = [r for r in requests if urlsplit(r.url).hostname != '127.0.0.1']
                 assert len(outgoing) == 1
                 assert all(re.fullmatch(r'https://api\.pwnedpasswords\.com/range/[A-F0-9]{5}',r.url) for r in outgoing)
@@ -71,7 +72,7 @@ def main():
                 page.locator('#password').fill('password')
                 page.locator('#check').click()
                 expect(page.locator('#result-title')).to_have_text('No match in this dataset')
-                assert 'not proof that it is safe' in page.locator('#result-detail').inner_text()
+                expect(page.locator('#result-detail')).to_contain_text('not proof that it is safe')
                 response_mode[0] = 'error'
                 page.locator('#password').fill('password')
                 page.locator('#check').click()
