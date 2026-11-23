@@ -1,116 +1,60 @@
-# CoolCode browser tool template
+# Password Exposure Check
 
-A starting point for independent tools at `coolcode.ca/<repo>/`: a working local-text
-example, responsive UI, Python standard-library build, Node tests, PR checks and Pages
-publication. No npm install is needed.
-
-## Using the example
+A private-by-design browser utility for comparing a password against [Have I Been Pwned's Pwned Passwords](https://haveibeenpwned.com/Passwords). No account, key, backend or fixed password list is required. Source and local assets are published as a static GitHub Pages application at `/pwncheck-kanon/`.
 
 <!-- coolcode:guide -->
-The first occurrence of each trimmed line keeps its place. Compare the output with the original text before copying the result.
+Enter a password and explicitly choose **Check exposure**. Only the first five SHA-1 hash characters go to Pwned Passwords; the browser compares the returned range locally and clears the input after a successful check. A missing match does not prove the password is safe, and a match does not identify an account or a particular breach. Clear everything removes this tab's input and result.
 <!-- /coolcode:guide -->
 
-For a real tool, replace this paragraph with one or two plain-text sentences
-about an example, a limit or how to interpret the results. Keep the source,
-coverage, refresh behaviour and a worked example in this README as appropriate.
-When updating a tool, revise any details its behaviour has changed and keep the
-homepage's shorter data-source sentence in `tool.json` accurate.
-The hub imports the marked note into the catalogue README.
+## How it works
 
-## One-time template setup
+1. The browser encodes the exact input as UTF-8, without trimming, normalizing or changing case, and uses Web Crypto to calculate SHA-1.
+2. After an explicit submit only, it sends `GET https://api.pwnedpasswords.com/range/{first-five-hex-characters}` with `Add-Padding: true`. It sends no password, full hash, email address, request body or API key. Browser-controlled User-Agent headers are left alone.
+3. Returned hash suffixes are compared in memory. Zero-count padding is discarded. Malformed, empty, oversized, unavailable or timed-out responses are errors, never reassuring no-match verdicts.
+4. The displayed occurrence count comes from the provider's dataset. It does not count unique people or breaches. SHA-1 is only the provider's lookup format, not a password-storage recommendation.
 
-Enable **Settings → General → Template repository** here. This repository does not
-need Pages enabled: its workflow builds/tests but intentionally skips deployment.
-New copies also skip deployment until `scripts/init.py` sets the tool ID to match
-their repository name. This lets you create the repo before configuring Pages.
+## Privacy and boundaries
 
-## Start a new tool
+There is no analytics, visit-counter script, remote font, remote image, external JavaScript, service worker, localStorage, sessionStorage, cookie, exported report, saved history or shareable result URL. The only automatic application fetch is its local configuration. API requests start only after Check; typing, toggling visibility and focus changes never start them. Password input has no form `name`, and a restrictive Content Security Policy prevents normal form submission. The standard CoolCode report link carries only the tool ID, never the input or result.
 
-1. Select **Use this template → Create a new repository**, choose owner `jsdyer`,
-   a unique lowercase name such as `my-tool`, and public visibility.
-2. Clone the new repository. Use Python 3.12+ and Node 24+.
-3. Set the identity, using a slug that matches the repository name:
+The template's `VISIT_COUNTER` placeholder and builder injection are intentionally removed from this repo. A password-entry tool should not load that extra script. The corresponding builder test explicitly enforces its absence while preserving the issue link.
 
-```sh
-python3 scripts/init.py my-tool --title "My Tool" --description "Describe what this tool does."
-```
+The request omits credentials and referrers, disables browser fetch caching, and rejects redirects. Both editing and Clear abort active work; clearing during hashing prevents a later API request. A successful check clears the input, and navigating away or restoring the page from the back/forward cache clears visible state. The tool does not promise to overwrite every JavaScript string in browser memory, undo an already-sent request, control password managers/extensions, or remove network/developer-tools records. The provider and its CDN can observe the IP address, requested prefix and normal connection metadata. This is data minimization, not perfect anonymity.
 
-Review the category, tags and icon in `tool.json`. `access: "browser"` tells the main
-catalogue that the tool works immediately without installation. `--owner` supports a different
-GitHub owner, but only projects owned by `jsdyer` inherit the CoolCode domain.
+The page does not read unrelated CoolCode storage and cannot control other pages or scripts injected by a hosting proxy. Hosting must preserve the no-analytics/no-injected-script boundary. Visitors should review the source and trust their browser before entering sensitive information. Prefer testing the public example `password` while evaluating the tool; it is not automatically entered or checked.
 
-4. Replace the example in `web/` and its tests. Update the privacy explanation,
-   source attribution and README to describe the real tool.
-5. Test and preview:
+## Expand or customize
+
+Edit `web/config.json` to change:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `timeoutMs` | `15000` | Whole-check timeout; validated from 1–60 seconds. |
+| `maxPasswordBytes` | `4096` | Maximum exact UTF-8 input size, up to 65536 bytes. |
+| `maxResponseBytes` | `1048576` | Streaming response limit; 40000–2097152 bytes. |
+
+There is no list of sample passwords, domains or accounts to expand: every entered password uses the same explicit range-check flow. `web/model.mjs` contains hashing, strict request construction and response comparison; `web/app.mjs` handles consent-by-click, cancellation and display; `web/style.css` and `web/tokens.css` control appearance. Do not add full-hash requests, type-ahead checks, analytics or persistence. Keep the API host in code and the CSP allowlist together if the provider ever changes; arbitrary API endpoints are deliberately not configurable because they would receive sensitive prefixes.
+
+To publish a change, edit the configuration/source, run the checks below, commit and push to `main`. The existing Pages workflow tests and builds before deployment. There is no scheduled collector and no required GitHub secret. Add enhancements as local processing where possible and update this README when inputs or interpretation change.
+
+## Development and verification
 
 ```sh
 node --test tests/*.test.mjs
 python3 -m unittest discover -s tests -v
 python3 scripts/build.py
-python3 -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000/`. The example trims lines, skips blanks and removes exact
-duplicates, preserving first-seen order and capitalization. It processes the text in tab memory. Update that explanation if your app behaves differently.
+Node tests cover exact UTF-8/SHA-1 behavior, known public vectors, request minimization, padding, malformed data, size limits, errors and cancellation. The build is offline and copies only `web/` to ignored `dist/`. `tests/browser_smoke.py` runs in GitHub Actions with Chromium at a project subpath, uses deterministic intercepted provider responses for the public `password` example, asserts no third-party requests before explicit Check, verifies the sole outbound five-character request and padding header, checks reset/error/no-match states and absence of persistence, and saves desktop/390px screenshots. It never sends real passwords or depends on live provider uptime.
 
-CI also tests the browser flow and mobile layout at a project subpath. Replace the
-sample assertions in `tests/browser_smoke.py` when implementing your own UI. To run
-that check locally (optional for ordinary preview):
+## Source and provider notes
 
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install -r tests/browser-requirements.txt
-python3 -m playwright install --with-deps chromium
-python3 tests/browser_smoke.py
-```
+Reviewed 2026-11-23:
 
-Playwright is a test-only dependency; the app and its static build do not use it.
+- [Official range API, padding, incremental-search guidance and CORS](https://haveibeenpwned.com/API/v3#PwnedPasswords).
+- [Provider confirmation: free Pwned Passwords integration, no subscription or licensing requirement](https://support.haveibeenpwned.com/hc/en-au/articles/15316377846671-I-wish-to-use-the-Pwned-Passwords-API-How-can-I-get-started).
+- [HIBP privacy policy](https://haveibeenpwned.com/Privacy) and [terms of use](https://haveibeenpwned.com/TermsOfUse).
 
-## Publish and register
+A live GET using only the documented public `password` test vector's prefix (`5BAA6`) returned HTTP 200, `Access-Control-Allow-Origin: *` and the expected matching suffix. A HEAD request returned 405; this app uses GET. Response lengths can exceed older documentation examples, so the parser has a byte limit rather than a fixed record-count assumption. Browser/CORS validation is also part of deployment review. No real user secret was used for implementation tests.
 
-When the actual tool is ready, in the **new tool repository** set **Settings → Pages → Build and deployment →
-Source → GitHub Actions**. Push to `main`, or manually run **Browser tool · Check and
-publish** after enabling Pages. If the initial deployment ran before Pages was enabled,
-enable it and rerun. PRs only check/build and provide a downloadable preview artifact.
-
-Keep `{{VISIT_COUNTER}}` in the page head and `{{ISSUE_LINK}}` in the footer when replacing the starter UI. The build enables these for initialized CoolCode repositories. The shared counter records aggregate opens on coolcode.ca by public tool ID. Toolbox inputs and URL parameters are excluded. The issue link opens a reporting form with the tool already selected.
-
-Keep app-owned asset paths and module imports relative. Check `https://coolcode.ca/my-tool/`.
-Do not add a CNAME or set `coolcode.ca` as this project's custom domain; the account
-site supplies it. Only successful `main` builds deploy.
-
-After verifying the app, copy the reviewed object from `tool.json` into `data/tools.json`
-in [the main site](https://github.com/jsdyer/jsdyer.github.io). Each tool still builds
-independently. Update the hub record when listing metadata changes; the hub is the
-authority for discovery. Ordinary app updates touch only this repository.
-
-The main site separates **Use in your browser** from **Install yourself**. An app
-that asks for a file is still a browser tool. Standalone Linux packages should start
-in their own repositories with their own build/release workflow, rather than copying
-this browser-only scaffold. Their hub record uses `access: "install"`, links to an
-installation guide, and includes `requirements`.
-
-## Files
-
-| Path | Purpose |
-| --- | --- |
-| `tool.json` | Page metadata and a ready-to-copy catalogue record |
-| `web/` | HTML, responsive CSS, DOM interactions and separate model logic |
-| `scripts/build.py` | Escape metadata and build `web/` into `dist/` |
-| `scripts/init.py` | Set a new project's identity |
-| `tests/` | Application and builder tests |
-| `.github/workflows/pages.yml` | Check PRs and publish successful main builds |
-| `AGENTS.md` | Instructions for future coding work |
-
-Namespace optional storage as `coolcode:<tool-id>:<key>`; CoolCode paths share a
-browser origin. Don't save pasted text/uploads by default. Document external APIs
-and send only the information needed for the selected action. Never embed secrets.
-
-Scheduled refresh is opt-in. Validate source data before deploying, display its date,
-and preserve the last good deployment on failure. Public-repository schedules can
-stop after 60 days without repository activity.
-
-Templates don't propagate future edits automatically. Adopt fixes explicitly and
-consider a versioned reusable workflow once several tools confirm the shared process.
-Choose and add the intended software license before distributing a new project.
+This tool checks password exposure for the visitor's own benefit. It does not access HIBP's account, email, domain or stealer-log APIs and is not a breach notification service.

@@ -1,4 +1,5 @@
 import json
+from html.parser import HTMLParser
 from pathlib import Path
 import shutil
 import sys
@@ -44,13 +45,33 @@ class BuildTests(unittest.TestCase):
                 self.edit(id=slug, url=f"/{slug}/", source=f"https://github.com/{owner}/{slug}")
                 build(self.root)
                 page = (self.root / "dist/index.html").read_text()
-                self.assertEqual('/assets/tool-metrics.js' in page, enabled)
+                self.assertNotIn('/assets/tool-metrics.js', page)  # No analytics on a password entry page.
                 self.assertEqual(f'https://coolcode.ca/report/?tool={slug}' in page, enabled)
                 self.assertNotIn("{{", page)
 
     def test_url_matches_tool_id(self):
         self.edit(url="/different/")
         with self.assertRaises(ValueError): metadata(self.root)
+
+    def test_password_page_loads_only_local_assets_and_cannot_submit_a_form(self):
+        build(self.root)
+        class Tags(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.items = []
+            def handle_starttag(self, tag, attrs):
+                self.items.append((tag, dict(attrs)))
+        tags = Tags()
+        tags.feed((self.root / "dist/index.html").read_text())
+        scripts = [attrs for tag, attrs in tags.items if tag == "script"]
+        self.assertTrue(scripts)
+        self.assertTrue(all(attrs.get("src", "").startswith("./") for attrs in scripts))
+        self.assertFalse(any(tag in ("iframe", "object", "embed") for tag, _ in tags.items))
+        password = next(attrs for tag, attrs in tags.items if attrs.get("id") == "password")
+        self.assertNotIn("name", password)
+        csp = next(attrs["content"] for tag, attrs in tags.items if attrs.get("http-equiv") == "Content-Security-Policy")
+        self.assertIn("form-action 'none'", csp)
+        self.assertNotIn("unsafe-", csp)
 
     def test_requires_a_source_sentence_and_a_guide_note(self):
         (self.root / "README.md").write_text("# A tool")

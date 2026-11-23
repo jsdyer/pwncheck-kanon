@@ -3,32 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.pwnedpasswords.com; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
   <meta name="description" content="{{DESCRIPTION}}">
   <title>{{TITLE}} · CoolCode</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <script type="module" src="./app.mjs"></script>
-  {{VISIT_COUNTER}}
 </head>
 <body data-tool-id="{{TOOL_ID}}">
   <a class="skip" href="#main">Skip to content</a>
-  <header><a href="https://coolcode.ca/">← CoolCode.ca</a><a href="{{SOURCE_URL}}">Source &amp; instructions ↗</a></header>
+  <header class="site-header"><a class="brand" href="https://coolcode.ca/">CoolCode<span>.ca</span></a><a class="source-link" href="{{SOURCE_URL}}" rel="noreferrer">Source &amp; instructions <span aria-hidden="true">↗</span></a></header>
   <main id="main">
-    <p class="eyebrow">Browser tool starter</p>
-    <h1>{{TITLE}}</h1>
-    <p class="intro">{{DESCRIPTION}}</p>
-    <section aria-labelledby="example-title">
-      <h2 id="example-title">Clean a list</h2>
-      <p>Trim spaces, skip blank lines and remove exact duplicates. Capitalization stays distinct.</p>
-      <div class="panels">
-        <div><label for="input">Your lines</label><textarea id="input" rows="10" maxlength="100000" spellcheck="false" placeholder="Paste one item per line"></textarea></div>
-        <div><label for="output">Cleaned lines</label><textarea id="output" rows="10" readonly spellcheck="false"></textarea></div>
-      </div>
-      <div class="actions"><button id="sample" type="button">Load example</button><button id="clear" type="button">Clear</button><button id="copy" type="button" hidden>Copy result</button></div>
-      <p id="status" role="status" aria-live="polite">Paste a list to begin.</p>
-      <noscript><p>This tool needs JavaScript to process your text. The source is available above.</p></noscript>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy"><p class="eyebrow"><span class="dot"></span> Security / Password exposure</p>
+      <h1 id="page-title">A breach check.<br><em>Less to share.</em></h1>
+      <p class="intro">Find out whether a password appears in known breach data. The password stays in this browser. Only a small piece of its hash leaves.</p>
+      <p class="quiet-label">No account. No API key. No checks as you type.</p></div>
+      <aside class="privacy-card" aria-label="What is shared"><p class="eyebrow">The privacy boundary</p><div class="fraction"><strong>5</strong><span>of 40<br>hash characters sent</span></div><div class="hash-strip" aria-hidden="true"><span>•••••</span> ···································</div><p>The rest is compared here.<br>The provider can still see your IP and hash prefix.</p><a href="#how-it-works">See how the check works <span aria-hidden="true">↓</span></a></aside>
     </section>
-    <aside aria-label="Privacy"><strong>Stays on your device.</strong> The browser processes your text in this tab. Reloading clears it.</aside>
+    <section class="checker" aria-labelledby="check-title">
+      <div class="section-heading"><span class="section-number">01</span><div><p class="eyebrow">Check one password</p><h2 id="check-title">Has this password been exposed?</h2></div></div>
+      <form id="check-form" novalidate>
+        <label for="password">Password to check</label>
+        <div class="input-wrap"><input id="password" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="input-limit privacy-note" placeholder="Enter a password" maxlength="65536"><button id="show-password" type="button" aria-pressed="false" aria-label="Show or hide password">Show</button></div>
+        <p id="input-limit" class="field-hint">Spaces and capitalization are preserved.</p>
+        <div class="actions"><button class="primary" id="check" type="submit" disabled>Check exposure</button><button class="secondary" id="clear" type="button">Clear everything</button></div>
+        <p id="status" class="status" role="status" aria-live="polite">Loading checker settings…</p>
+      </form>
+      <div id="result" class="result" role="region" aria-label="Exposure result" aria-live="polite" hidden><p id="result-count" class="eyebrow"></p><h3 id="result-title"></h3><p id="result-detail"></p></div>
+      <p id="privacy-note" class="privacy-note"><span aria-hidden="true">↳</span> Clicking Check sends a five-character SHA-1 prefix to <a href="https://haveibeenpwned.com/Passwords" rel="noreferrer">Have I Been Pwned</a>. Your password and complete hash are never sent by this tool. The input is cleared after a successful check.</p>
+      <noscript><p>JavaScript and Web Crypto are required to hash the password locally. No form will submit without JavaScript.</p></noscript>
+    </section>
+    <section id="how-it-works" class="method" aria-labelledby="method-title"><div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">Small request. Local comparison.</p><h2 id="method-title">What happens when you check</h2></div></div>
+      <ol class="steps"><li><span class="step-index">1 / IN YOUR BROWSER</span><h3>Make a fingerprint</h3><p>Your browser turns the exact password into a 40-character SHA-1 hash. This is for lookup, not a recommendation for storing passwords.</p></li><li><span class="step-index">2 / AT THE PROVIDER</span><h3>Ask for a range</h3><p>Only the first five characters go to Pwned Passwords. It returns matching hash endings, plus padding to reduce response-size clues.</p></li><li><span class="step-index">3 / BACK IN THIS TAB</span><h3>Compare the rest</h3><p>Your browser checks the remaining 35 characters against that range. A match means this password is in the provider’s exposed-password dataset.</p></li></ol>
+    </section>
+    <section class="notes" aria-label="Interpreting the result"><div><p class="eyebrow">Know the limits</p><h2>Exposure is not strength.</h2><p>A missing match is not a safety certificate. This checks a password value, not your email address, an account, or every breach that has ever happened. Counts describe occurrences in the dataset, not affected people or separate breaches.</p></div><div><p class="eyebrow">Privacy by design</p><h2>No history to clear later.</h2><p>This tool uses no analytics, remote fonts, browser storage or check history. Clear everything removes the visible input and result. Your browser, extensions and network still matter; the prefix request is not perfect anonymity.</p></div></section>
+    <details class="sources"><summary>Source, privacy &amp; further reading <span aria-hidden="true">+</span></summary><p>Results come from <a href="https://haveibeenpwned.com/Passwords" rel="noreferrer">Have I Been Pwned · Pwned Passwords</a>. The dataset changes over time; this tool does not keep previous checks or identify a particular leak.</p><p><a href="https://haveibeenpwned.com/API/v3#PwnedPasswords" rel="noreferrer">Range API documentation</a> · <a href="https://haveibeenpwned.com/Privacy" rel="noreferrer">Provider privacy policy</a> · <a href="{{SOURCE_URL}}" rel="noreferrer">Read the code</a></p></details>
   </main>
-  <footer>Part of <a href="https://coolcode.ca/">the CoolCode collection</a>. {{ISSUE_LINK}}</footer>
+  <footer><p>{{TITLE}} <span>·</span> Part of <a href="https://coolcode.ca/">CoolCode</a></p><p>{{ISSUE_LINK}}</p></footer>
 </body>
 </html>

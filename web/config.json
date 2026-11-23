@@ -1,0 +1,5 @@
+{
+  "timeoutMs": 15000,
+  "maxPasswordBytes": 4096,
+  "maxResponseBytes": 1048576
+}

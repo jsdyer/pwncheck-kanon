@@ -1,16 +1,21 @@
 {
-  "id": "coolcode-tool-template",
-  "title": "CoolCode Tool Starter",
-  "description": "A browser-only example that trims lines and removes exact duplicates.",
+  "id": "pwncheck-kanon",
+  "title": "Password Exposure Check",
+  "description": "Check whether a password appears in known breach data, without sending the password or its full hash.",
   "category": "security",
-  "tags": ["text", "lines", "duplicates"],
+  "tags": [
+    "passwords",
+    "privacy",
+    "breach-data",
+    "k-anonymity"
+  ],
   "icon": "scan-search",
-  "url": "/coolcode-tool-template/",
-  "source": "https://github.com/jsdyer/coolcode-tool-template",
+  "url": "/pwncheck-kanon/",
+  "source": "https://github.com/jsdyer/pwncheck-kanon",
   "hosting": "project",
   "access": "browser",
   "data_info": {
-    "mode": "local",
-    "detail": "The browser reads the text you paste and compares its lines."
+    "mode": "mixed",
+    "detail": "Pwned Passwords supplies matching hash ranges; the password and full comparison stay in your browser."
   }
 }
